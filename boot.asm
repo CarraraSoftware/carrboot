@@ -7,7 +7,7 @@
 
 BITS 16
 ORG  0x00
-jmp start
+jmp main
 nop
 
 OEMName                     db "CARRBOOT"
@@ -15,7 +15,7 @@ BytesPerSector:             dw 512
 SectorsPerCluster:          db 1
 ReservedSectors:            dw 1
 NumberFATs:                 db 2
-MaxNumberRootEntries:       dw 512
+NumberRootEntries:          dw 224
 TotalSectors:               dw 80 * 2 * 18
 MediaDescriptor:            db 0xF0
 SectorsPerFAT:              dw 9
@@ -30,22 +30,18 @@ SerialNumber:	            dd 0xa0a1a2a3
 VolumeLabel: 	            db "MOS FLOPPY "
 FileSystem: 	            db "FAT12   "
 
-TracksPerHead:              dw 80
-
 BufferStart   dw 0x0500
-BufferCurrent dw 0x0500
 DRIVE_NUMBER: db 0
 
-start:
-    cli             ; disable interrupts
+main:
+    cli
     mov AX, 0x07C0
     mov DS, AX
     mov ES, AX
     mov FS, AX
     mov GS, AX
 
-    ; create the stack
-    mov AX, 0x0000  ; set the stack
+    mov AX, 0x0000
     mov SS, AX
     mov SP, 0xFFFF
     sti 
@@ -54,24 +50,52 @@ start:
     call cursorhome
     call clear
     call disk_reset
+    call readroot
 
-    mov AX, word [SectorsPerFAT]
-    mul word [NumberFATs]
-    add AX, [ReservedSectors]
-    add AX, [HiddenSectors]
-    call read_sectors
 
-    xor AH, AH
-    call print_byte
-    call newline
-
+    xor DI, DI
+    xor SI, SI
+    mov DI, [NumberRootEntries]
     mov SI, [BufferStart]
-    mov AH, 0xFF
-    call print_strn
+.outer:
+    test DI, DI
+    jz .end
+
+    cmp [SI], 0
+    je .skip
+    call print_str
+    mov AL, " " 
+    call print_chr
+    
+    xor BX, BX
+    mov BX, 0x06
+    add SI, 0x1A
+.inner:
+    test BX, BX 
+    jz .addlast
+
+    xor AX, AX
+    mov AX, [SI]
+    call print_byte
+    mov AL, " " 
+    call print_chr
+    inc SI
+    dec BX
+    jmp .inner
+
+
+.addlast:
     call newline
+    ;inc SI
+    jmp .nextouter
+.skip:
+    add SI, word 0x20
+.nextouter:
+    dec DI
+    jmp .outer
 
+.end:
     jmp halt    
-
 
 lba_to_chs:
 ; params: 
@@ -81,6 +105,10 @@ lba_to_chs:
 ; mov CX[0-5],  { sector         }   Sector   = (LBA % SectorsPerTrack) + 1        
 ; mov CX[6-15], { cylinder       }   Cylinder = (LBA / SectorsPerTrack) / NumHeads   
 ; mov DH,       { head           }   Head     = (LBA / SectorsPerTrack) % NumHeads 
+; CX
+; [........  ........]
+; [CCCCCCCC][CCSSSSSS]
+; CH        CL
 
     push AX
     push DX
@@ -106,13 +134,13 @@ lba_to_chs:
     ret
 
 read_sectors:
-    push BX
-    push CX
-    push DX
-    push DI
+; params:
+; mov AX, { LBA_Sector } NOTE: LBA starts at 0
+; mov DI, { number_sectors } 
+    pusha
 
     call lba_to_chs
-    mov AL, byte 0x01              ; number_sectors
+    mov AX, DI                     ; number_sectors
     mov AH, byte 0x02              ; subfunction = 2
     mov BX, [BufferStart]          ; buffer
     mov DL, byte [DRIVE_NUMBER]
@@ -130,51 +158,42 @@ read_sectors:
     call print_str
     jmp halt
 .end:
-    pop DI
-    pop DX
-    pop CX
-    pop BX
+    xor AH, AH
+    call print_byte ; AL contains the number of sectors read
+    mov SI, sectors_read
+    call print_str
+    call newline
+    popa
     ret
 
+
+readroot:
+    ; NumberRootEntries * 32 bytes ------ n sectors?
+    ; BytesPerSector         bytes ------ 1 sector
+    ; AX: n = NumberRootEntries * 32 / BytesPerSector
+    mov AX, 0x20
+    mul word [NumberRootEntries]
+    div word [BytesPerSector]
+    mov DI, AX
+
+    xor DX, DX
+    xor AX, AX
+    mov AX, word [SectorsPerFAT]
+    mov BL, byte [NumberFATs]
+    xor BH, BH
+    mul BX
+    add AX, word [ReservedSectors]
+    add AX, word [HiddenSectors]
+    call read_sectors 
+    ret
+
+
 disk_reset:
-    push AX
-    push DX
+    pusha
     mov AH, byte 0x00
     mov DL, byte [DRIVE_NUMBER]
     int 0x13
-    pop DX
-    pop AX
-    ret
-
-counter:
-; counts down from n to 0, expects n on SI
-    push AX
-.loop:
-    mov AX, SI
-    call print_byte
-
-    mov AL, 0x0D
-    call print_chr
-
-    mov AL, 0x0A
-    call print_chr
-
-    dec SI
-    cmp SI, 0
-    jne .loop
-    pop AX
-    ret
-
-checkcf:
-    push SI
-    jc .err
-    mov SI, success
-    jmp .end
-.err:
-    mov SI, failure
-.end:
-    call print_str
-    pop SI
+    popa
     ret
 
 newline:
@@ -186,12 +205,8 @@ newline:
     pop AX
     ret
 
-
 clear:
-    push AX
-    push BX
-    push CX
-    push DX
+    pusha
     mov AH, byte 0x06
     mov AL, byte 0x00
     mov BH, byte 0x0F
@@ -200,58 +215,50 @@ clear:
     mov DH, byte 0xFF
     mov DL, byte 0xFF
     int 0x10
-    pop DX
-    pop CX
-    pop BX
-    pop AX
+    popa
     ret
 
 cursorhome:
-    push AX
-    push BX
-    push DX
+    pusha
     mov AH, byte 0x02
     mov BH, byte 0x00
     mov DX, word 0x00
     int 0x10
-    pop DX
-    pop BX
-    pop AX
+    popa
     ret
 
 
 print_byte:
 ; expects byte AX
-; while(v!=0) {print('0' + v%10); v = v / 10;
-    push SI
-    mov SI, 0
+; do { printf('0' + v%10); v = v / 10 } while(v!=0);
+    pusha
+    xor SI, SI
+    xor CX, CX
+    xor AH, AH
+    mov CH, byte 0x0A
 .loop:
-    cmp AX, 0x00
-    je .mid
-    mov CX, 0x0A
-    div CL
+    div CH ; AL = quot. | AH = remain.
     mov [printbytebuf + SI], AH
     inc SI
-    movzx AX, AL
+    xor AH, AH
+    test AL, AL
+    jz .print
     jmp .loop
-.mid:
-    cmp SI, 0
-    jne .print
-    mov AL, 0
-    call print_digit
 .print:
     dec SI
+    xor AX, AX
     mov AL, [printbytebuf + SI] 
     call print_digit
-    cmp SI, 0
-    jne .mid
+    test SI, SI
+    jnz .print
 .end:
-    pop SI
+    popa
     ret
 
 print_digit:
 ; expects digit 0-9 at AL
     push AX
+    xor AH, AH
     add AL, '0'
     call print_chr
     pop AX
@@ -260,9 +267,7 @@ print_digit:
 
 print_strn:
 ; expects string at SI, n at AH
-    push AX
-    push SI
-    push BX
+    pusha
 
     mov BL, 0
 .loop:
@@ -274,9 +279,7 @@ print_strn:
     inc BL
     jmp .loop
 .end:
-    pop BX
-    pop SI
-    pop AX
+    popa
     ret
 
 print_str:
@@ -296,9 +299,7 @@ print_str:
 
 print_chr:
 ; expects char at AL
-    push AX
-    push BX
-    push SI
+    pusha
     cmp AL, byte 0
     jnz .notnull
     mov SI, nullstr
@@ -310,21 +311,16 @@ print_chr:
     mov BL, byte 0x00
     int 0x10
 .end:
-    pop SI
-    pop BX
-    pop AX
+    popa
     ret
 
 halt:
     jmp halt
 
 printbytebuf: TIMES 3 db 0
-; inside: db "inside read sectors function", 0x0D, 0x0A, 0x00 
-; hello: db "hello world", 0x0D, 0x0A, 0x00
 nullstr: db "<NULL>", 0x00
-success: db "check success", 0x0D, 0x0A, 0x00
-failure: db "check failure", 0x0D, 0x0A, 0x00
-read_sector_failed: db "read sector failed 3 times", 0x0D, 0x0A, 0x00
+read_sector_failed: db "rdsec fail", 0x00
+sectors_read: db " secs read", 0x00
 
 TIMES 510 - ($ - $$) db 0
 db 0x55
