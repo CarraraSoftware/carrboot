@@ -1,21 +1,3 @@
-#  first tests - DIDN'T WORK
-base: asm
-	qemu-system-i386 ./drive/boot
-run2: asm
-	qemu-system-i386 ./drive/boot -fda fat:floopy:rw:./drive/
-
-# second tests - DIDN'T WORK
-img:
-	qemu-img create -f raw ./drive/floppy 1.44M
-fs: img
-	mkfs.vfat -c -v -F 12 -M 0xF0 -g 1/18 -D 0 ./drive/floppy
-cpboot:
-	cp ./drive/boot /mnt/floppy
-ddboot:
-	dd if=./drive/boot of=./drive/floppy bs=512 count=1 conv=nocreat,notrunc
-
-
-
 fat:
 	nasm -o drive/fat fat.asm 
 	dd if=/dev/zero of=drive/fat bs=512 count=2880
