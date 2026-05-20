@@ -1,6 +1,7 @@
-%define ORIGIN 0x0000
+%define ORIGIN 
 bits 16
-org ORIGIN
+org 0x1000
+jmp main
 
 %define WIDTH  0x140
 %define HEIGHT 0x0C8
@@ -15,8 +16,12 @@ org ORIGIN
 
 main:
     ; init stack
-    mov SP, ORIGIN
-    mov BP, ORIGIN
+    cli
+    mov AX, 0x600
+    mov SS, AX
+    mov BP, 0x0
+    mov SP, 0x1000
+    sti
     call init
 
 .loop:

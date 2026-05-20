@@ -40,12 +40,11 @@ files: drive
 run: files 
 	qemu-system-i386 -drive file=drive/fat,if=floppy,media=disk,format=raw,index=0
 
-
 DRIVE_FILE = fat
 mount:
-	mount drive/$(DRIVE_FILE) /mnt/carboot -t vfat -o loop 
+	mount drive/$(DRIVE_FILE) /mnt/carrboot -t vfat -o loop 
 unmount:
-	umount /mnt/carboot
+	umount /mnt/carrboot
 
 
 

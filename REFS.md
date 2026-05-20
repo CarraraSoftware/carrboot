@@ -1,3 +1,4 @@
+- [A tutorial on how to hardcode a FAT12 Header for a bootdisk.](https://board.flatassembler.net/topic.php?p=65958)
 - [Making Simple Bootloader using x86 Assembly (Nir Lichtman)](https://www.youtube.com/watch?v=xFrMXzKCXIc)
 - [Writing Boot Sector Code - By Susam Pal](https://susam.net/writing-boot-sector-code.html)
 - [Writing a Bootloader from Scratch - CS CMU](https://www.cs.cmu.edu/~410-s07/p4/p4-boot.pdf)
@@ -6,6 +7,8 @@
 - [Intel 64 and IA-32 Manual](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
 - [Stanislavs - INT 0x13, AH=0x02](https://www.stanislavs.org/helppc/int_13-2.html)
 - [FAT's Root Directory Entry Structure](https://www.szyunze.com/wp-content/uploads/2024/07/Root-Directory-SFN-Entry-Data-Structure.webp)
+- [Elm Chan: FAT's MAP](https://elm-chan.org/docs/rc/fat_map.png)
+- [Elm Chan: FAT Docs](https://elm-chan.org/docs/fat_e.html)
 - OSDev Wiki:
     - [System Initialization (x86)](http://wiki.osdev.org/System_Initialization_(x86))
     - [Boot Sequence](https://wiki.osdev.org/Boot_Sequence)

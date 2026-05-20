@@ -1,10 +1,3 @@
-; partially copied from: (https://board.flatassembler.net/topic.php?p=65958)
-; MINIMAL FAT12 BOOTABLE DISK!
-; By: Rhyno_DaGreat (Ryan Lloyd)
-; Description: A tutorial on how to hardcode a FAT12 Header for a bootdisk.
-
-; another FAT12 reference: (https://elm-chan.org/docs/fat_e.html)
-
 BITS 16
 ORG  0x00
 jmp main
@@ -30,8 +23,8 @@ SerialNumber:	            dd 0xa0a1a2a3
 VolumeLabel: 	            db "MOS FLOPPY "
 FileSystem: 	            db "FAT12   "
 
-BufferStart   dw 0x0500
 DRIVE_NUMBER: db 0
+buffer EQU 0x1000
 
 main:
     cli
@@ -50,51 +43,53 @@ main:
     call cursorhome
     call clear
     call disk_reset
-    call readroot
 
-
-    xor DI, DI
-    xor SI, SI
-    mov DI, [NumberRootEntries]
-    mov SI, [BufferStart]
-.outer:
-    test DI, DI
-    jz .end
-
-    cmp [SI], 0
-    je .skip
-    call print_str
-    mov AL, " " 
-    call print_chr
-    
-    xor BX, BX
-    mov BX, 0x06
-    add SI, 0x1A
-.inner:
-    test BX, BX 
-    jz .addlast
-
+    xor DX, DX
     xor AX, AX
-    mov AX, [SI]
-    call print_byte
-    mov AL, " " 
-    call print_chr
-    inc SI
-    dec BX
-    jmp .inner
+    xor BX, BX
+    
+    ; SectorsInRoot
+    mov AX, 0x20
+    mul word [NumberRootEntries]
+    div word [BytesPerSector]
+
+    ; SectorsInFat
+    mov DX, word [SectorsPerFAT]
+    xor BH, BH
+    mov BL, byte [NumberFATs]
+    mul DX, BX
+
+    ; SectorsInFat + SectorsInRoot
+    add AX, DX
+
+    ; HiddenSectors + ReservedSectors + SectorsInFat + SectorsInRoot
+    add AX, word [ReservedSectors]
+    add AX, word [HiddenSectors]
+    mov DI, word 0x01
+    call read_sectors 
+
+    ; 0xJKLM
+    ; 0x0JKL
+    mov AX, buffer
+    mov DS, AX
+    mov ES, AX
+    mov FS, AX
+    mov GS, AX
+
+    ; [buffer_seg:buffer_off]
+    ; mov AX, word buffer
+    ; mov AX, 
+    jmp buffer
+
+    
+    mov SI, boot_failed
+    call print_str
 
 
-.addlast:
-    call newline
-    ;inc SI
-    jmp .nextouter
-.skip:
-    add SI, word 0x20
-.nextouter:
-    dec DI
-    jmp .outer
-
-.end:
+    ; xor DI, DI
+    ; xor SI, SI
+    ; mov DI, [NumberRootEntries]
+    ; mov SI, [BufferStart]
     jmp halt    
 
 lba_to_chs:
@@ -140,9 +135,9 @@ read_sectors:
     pusha
 
     call lba_to_chs
-    mov AX, DI                     ; number_sectors
-    mov AH, byte 0x02              ; subfunction = 2
-    mov BX, [BufferStart]          ; buffer
+    mov AX, DI                      ; number_sectors
+    mov AH, byte 0x02               ; subfunction = 2
+    mov BX, buffer                  ; buffer
     mov DL, byte [DRIVE_NUMBER]
     
     mov DI, 3
@@ -166,33 +161,12 @@ read_sectors:
     popa
     ret
 
-
-readroot:
-    ; NumberRootEntries * 32 bytes ------ n sectors?
-    ; BytesPerSector         bytes ------ 1 sector
-    ; AX: n = NumberRootEntries * 32 / BytesPerSector
-    mov AX, 0x20
-    mul word [NumberRootEntries]
-    div word [BytesPerSector]
-    mov DI, AX
-
-    xor DX, DX
-    xor AX, AX
-    mov AX, word [SectorsPerFAT]
-    mov BL, byte [NumberFATs]
-    xor BH, BH
-    mul BX
-    add AX, word [ReservedSectors]
-    add AX, word [HiddenSectors]
-    call read_sectors 
-    ret
-
-
 disk_reset:
     pusha
     mov AH, byte 0x00
     mov DL, byte [DRIVE_NUMBER]
     int 0x13
+
     popa
     ret
 
@@ -321,6 +295,7 @@ printbytebuf: TIMES 3 db 0
 nullstr: db "<NULL>", 0x00
 read_sector_failed: db "rdsec fail", 0x00
 sectors_read: db " secs read", 0x00
+boot_failed: db "boot failed", 0x00
 
 TIMES 510 - ($ - $$) db 0
 db 0x55
