@@ -1,7 +1,11 @@
 %define ORIGIN 
 bits 16
 org 0x1000
+
+times 100 nop
 jmp main
+
+times 600 db 0
 
 %define WIDTH  0x140
 %define HEIGHT 0x0C8
@@ -14,6 +18,30 @@ jmp main
 %define GROUND_COLOR  0x08
 %define PLAYER_COLOR  0x0F
 
+hello: db "HELLO FROM GAME", 0x0D, 0x0A, 0x00 
+print_str:
+; expects string at SI
+    push AX
+    push SI
+.print_strloop:
+    lodsb ; == mov AL, SI;  SI++
+    cmp AL, byte 0 
+    je .print_strend
+    call print_chr
+    jmp .print_strloop
+.print_strend:
+    pop SI
+    pop AX
+    ret
+
+print_chr:
+; expects char at AL
+    mov AH, byte 0x0E 
+    mov BH, byte 0x00
+    mov BL, byte 0x00
+    int 0x10
+    ret
+
 main:
     ; init stack
     cli
@@ -24,6 +52,10 @@ main:
     sti
     call init
 
+    mov SI, hello
+    call print_str
+
+
 .loop:
     ; call busy
     call background
@@ -32,6 +64,27 @@ main:
     call player
     jmp .loop
     call halt
+
+init:
+    call clear
+    ; cursor to (0,0)
+    mov AH, byte 0x02
+    xor BX, BX
+    xor DX, DX
+    int 0x10
+
+    ; vga mode
+    mov AH, byte 0x00
+    mov AL, byte 0x13
+    int 0x10
+    ; set DataSegment to point to vga's frame buffer
+    mov BX, 0xA000 
+    mov DS, BX
+    ; wtf
+    ; mov BX, ORIGIN
+    ; mov CS, BX
+    ret
+
 
 %define GRAVITY 0x02
 %define PLAYER_JUMP -10
@@ -159,25 +212,6 @@ halt:
     jmp $
     ret
 
-init:
-    call clear
-    ; cursor to (0,0)
-    mov AH, byte 0x02
-    xor BX, BX
-    xor DX, DX
-    int 0x10
-
-    ; vga mode
-    mov AH, byte 0x00
-    mov AL, byte 0x13
-    int 0x10
-    ; set DataSegment to point to vga's frame buffer
-    mov BX, 0xA000 
-    mov DS, BX
-    ; wtf
-    ; mov BX, ORIGIN
-    ; mov CS, BX
-    ret
 
 
 clear:
@@ -279,28 +313,6 @@ checkcf:
     pop SI
     ret
 
-print_str:
-; expects string at SI
-    push AX
-    push SI
-.print_strloop:
-    lodsb ; == mov AL, SI;  SI++
-    cmp AL, byte 0 
-    je .print_strend
-    call print_chr
-    jmp .print_strloop
-.print_strend:
-    pop SI
-    pop AX
-    ret
-
-print_chr:
-; expects char at AL
-    mov AH, byte 0x0E 
-    mov BH, byte 0x00
-    mov BL, byte 0x00
-    int 0x10
-    ret
 
 cfnoerrormsg: db "No error in CF.", 0x0D, 0x0A, 0x00
 cferrormsg:   db "An error was detected in CF.", 0x0D, 0x0A, 0x00

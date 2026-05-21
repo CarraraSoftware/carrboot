@@ -33,9 +33,9 @@ drive: mkfs game boot
 	dd if=drive/boot of=drive/fat bs=512 count=1 conv=nocreat,notrunc
 
 files: drive
-	mcopy -i drive/fat drive/game "::game"
-	mcopy -i drive/fat dump/file.txt "::file.txt"
 	mcopy -i drive/fat dump/other.txt "::other.txt"
+	mcopy -i drive/fat dump/file.txt "::file.txt"
+	mcopy -i drive/fat drive/game "::game"
 
 run: files 
 	qemu-system-i386 -drive file=drive/fat,if=floppy,media=disk,format=raw,index=0
