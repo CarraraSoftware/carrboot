@@ -1,12 +1,10 @@
-%define ORIGIN 
 bits 16
 org 0x1000
 
-times 100 nop
 jmp main
 
-times 600 db 0
-
+; %define WIDTH  800
+; %define HEIGHT 600
 %define WIDTH  0x140
 %define HEIGHT 0x0C8
 
@@ -45,10 +43,10 @@ print_chr:
 main:
     ; init stack
     cli
-    mov AX, 0x600
+    mov AX, 0x6000
     mov SS, AX
-    mov BP, 0x0
-    mov SP, 0x1000
+    mov BP, 0xFFFF
+    mov SP, 0xFFFF
     sti
     call init
 
@@ -78,7 +76,11 @@ init:
     mov AL, byte 0x13
     int 0x10
     ; set DataSegment to point to vga's frame buffer
-    mov BX, 0xA000 
+    ; Toshiba Satellite CDT330: 0xC000 0xE400
+    ; mov BX, 0xC000
+    ; IBM PS/2:                 0xA000 
+    mov BX, 0xA000
+
     mov DS, BX
     ; wtf
     ; mov BX, ORIGIN
@@ -211,8 +213,6 @@ wait_:
 halt:
     jmp $
     ret
-
-
 
 clear:
     mov AH, byte 0x06

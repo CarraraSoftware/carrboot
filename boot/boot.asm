@@ -1,9 +1,17 @@
 BITS 16
-ORG  0x00
+ORG  0x7C00
+
 jmp main
 nop
 
-OEMName                     db "CARRBOOT"
+;; list of ascii error codes, as printed on the tty when things go wrong
+;; (note: print_str was removed to fit this mf in 512 bytes)
+;; 01 = file not found
+;; 02 = failed to execute file
+;; 03 = read sectors failed after 3 attempts
+
+
+OEMName                     db "MSDOS5.0"
 BytesPerSector:             dw 512
 SectorsPerCluster:          db 1
 ReservedSectors:            dw 1
@@ -20,17 +28,17 @@ DriveNumber: 	            db 0
 Unused: 		            db 0
 ExtBootSignature: 	        db 0x29
 SerialNumber:	            dd 0xa0a1a2a3
-VolumeLabel: 	            db "MOS FLOPPY "
+VolumeLabel: 	            db "BOOTDISK   "
 FileSystem: 	            db "FAT12   "
 
 
 main:
     cli
-    mov AX, 0x07C0
-    mov DS, AX
-    mov ES, AX
-    mov FS, AX
-    mov GS, AX
+    ; mov AX, 0x07C0
+    ; mov DS, AX
+    ; mov ES, AX
+    ; mov FS, AX
+    ; mov GS, AX
 
     mov AX, 0x0000
     mov SS, AX
@@ -40,45 +48,80 @@ main:
     mov [DRIVE_NUMBER], DL
     call disk_reset
 
-   
+    mov AL, 'C'
+    call print_chr
+    mov AL, 'B'
+    call print_chr
+    mov AL, 0x0A
+    call print_chr
+    mov AL, 0x0D
+    call print_chr
+
     call readfat
     call readroot
 
-    mov CX, [NumberRootEntries]
+    ; readfile(buffer, albertoname)
     mov BX, buffer
+    mov DI, albertoname
+    call readfile
 
+    ; mov BX, 0x1000
+    ; mov BX, buffer
+    ; jmp BX     ; // doesn't work at all, wtf?
+    
+    ; readfile(bigboy, bigboyname)
+    mov BX, bigboy
+    mov DI, bigboyname
+    call readfile
+
+
+    jmp buffer ; // works fine
+    ; jmp 0x1000
+
+
+    ; call execfile
+    ; jmp halt
+
+
+readfile:
+; mov BX, { buffer }
+; mov DI, { filename }
+    pusha
+
+    mov AX, [NumberRootEntries]
+    mov DX, bufoot
 .search:
-    test CX, CX
+    test AX, AX
     jz .notfound
 
+    push DI
     mov CX, 11
-    mov SI, BX
-    mov DI, filename
+    mov SI, DX
     rep cmpsb
+    pop DI
     je .found
 
-    add BX, 0x20
-    dec CX
+    add DX, 0x20
+    dec AX
     jmp .search
 
-
 .found:
-    mov CX, [BX + 0x1A]
+    mov SI, DX
+    mov CX, [SI + 0x1A]
     mov [filecluster], CX
-    mov SI, buffer
-
+    mov SI, BX
 .load:
     cmp [filecluster], 0x0FFF
-    je .executefile
+    je .end
 
     cmp [filecluster], 0x0
-    je .executefile
+    je .end
 
     mov DI, [filecluster]
     call read_cluster
 
     ; nextcluster = *(buffat + curcluster)
-    mov BX, [buffat]
+    mov BX, buffat
     mov AX, [filecluster]
     mul AX, 0x03
     mov CX, 0x02
@@ -102,30 +145,29 @@ main:
     mul BX, word [SectorsPerCluster]
     add SI, BX
     jmp .load
-
-.executefile:
-    mov AX, buffer
-    mov DS, AX
-    mov ES, AX
-    mov FS, AX
-    mov GS, AX
-    jmp buffer
-
-    mov SI, errmsg
-    call print_str
-    jmp halt
-
 .notfound:
-    mov SI, errmsg
-    call print_str
+    mov AL, 49
+    call print_chr
+.end:
+    popa
+    ret
+
+execfile:
+; mov AX, { *FILE_BUFFER }
+
+    ; TODO: setar registradores de segmento corretamente?
+    ; mov AX, bufseg
+    ; mov DS, AX
+    ; mov ES, AX
+    ; mov FS, AX
+    ; mov GS, AX
+    ; mov SI, FS:buffer
+    mov DL, [DRIVE_NUMBER]
+    jmp AX
+.error:
+    mov AL, 50
+    call print_chr
     jmp halt
-
-
-nextcluster:
-;    pusha
-;    popa
-;    ret
-
 
 read_cluster:
 ; params:
@@ -135,10 +177,6 @@ read_cluster:
     
     ; cluster_number - 2 => offset from RootDirectory
     sub DI, 0x2
-
-    xor DX, DX
-    xor AX, AX
-    xor BX, BX
 
     mov AX, 0x20
     mul word [NumberRootEntries]
@@ -157,7 +195,6 @@ read_cluster:
     add AX, word [ReservedSectors]
     add AX, word [HiddenSectors]
     add AX, DI
-
 
     mov BX, SI
     mov DI, word 0x01
@@ -222,8 +259,9 @@ read_sectors:
     dec DI
     test DI, DI
     jnz .retry
-    mov SI, errmsg
-    call print_str
+.error: ;; tried to read after disk reset 3 times and didn't work == error
+    mov AL, 51
+    call print_chr
     jmp halt
 .end:
     popa
@@ -243,7 +281,7 @@ readfat:
     add AX, [HiddenSectors]
     mov DI, [SectorsPerFAT]
     mul DI, [NumberFATs]
-    mov BX, [buffat]
+    mov BX, buffat
     call read_sectors
     popa
     ret
@@ -265,34 +303,16 @@ readroot:
     mul BX
     add AX, word [ReservedSectors]
     add AX, word [HiddenSectors]
-    mov BX, buffer
+    mov BX, bufoot
     call read_sectors 
     ret
 
-print_str:
-; expects string at SI
-    push AX
-    push SI
-.loop:
-    lodsb ; == mov AL, [ES:SI];  SI++
-    cmp AL, byte 0 
-    je .end
-    call print_chr
-    jmp .loop
-.end:
-    pop SI
-    pop AX
-    ret
 
 print_chr:
 ; expects char at AL
     pusha
-    cmp AL, byte 0
-    jnz .notnull
-    mov SI, nullstr
-    call print_str
-    jmp .end
-.notnull:
+    test AL, AL
+    jz .end
     mov AH, byte 0x0E 
     mov BH, byte 0x00
     mov BL, byte 0x00
@@ -301,14 +321,19 @@ print_chr:
     popa
     ret
 
+
 halt:
     jmp halt
 
 DRIVE_NUMBER: db 0
-buffat: dw 0xD000
 buffer equ 0x1000
+bufoot equ 0x4000
+bigboy equ 0x8000
+buffat equ 0xD000
 nullstr: db "\0", 0
-filename: db "GAME       "
+; albertoname: db "GAME       "
+albertoname: db "ALBERTO    "
+bigboyname:  db "BIGBOY     "
 filecluster: dw 0
 errmsg: db "err", 0x00
 
