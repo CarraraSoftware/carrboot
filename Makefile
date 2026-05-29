@@ -18,19 +18,24 @@
 # 	qemu-system-i386 -s -S -drive file=drive/fat,if=floppy,media=disk,format=raw,index=0
 
 
-FDEV = dev/fat
-# FDEV = /dev/sde
-FBOOT = lsfloppy
+# FDEV = dev/fat
+FDEV = /dev/sdc
+FBOOT = boot
 
 fat:
 	nasm -o $(FDEV) fat.asm 
 	dd if=/dev/zero of=dev/fat bs=512 count=2880
 
-fs: fat
+fs: # fat
 	mkfs.fat -v -f 2 -F 12 -M 0xF0 -g 2/18 -D 0 -R 1 -s 1 $(FDEV)
 
 bigboy:
 	nasm -g -o bin/bigboy run/bigboy.asm
+
+cigboy:
+	gcc -O0 -fno-pie -masm=intel -m32 -nostartfiles -nostdlib -ffreestanding -o bin/cigboy run/cigboy.c -Wl,--oformat=binary
+# ld -A pentium -nostdlib -O0 -o bin/cigboy --oformat=binary run/cigboy.o
+# nasm -g -o bin/cigboy run/cigboy.asm
 
 game:
 	nasm -g -o bin/game run/game.asm
@@ -41,7 +46,8 @@ alberto:
 boot:
 	nasm -g -o bin/$(FBOOT) boot/$(FBOOT).asm
 
-bootsector: fs alberto game boot bigboy
+bootsector: fs alberto game boot bigboy cigboy
+	dd if=/dev/zero of=$(FDEV) bs=512 count=1
 	dd if=bin/$(FBOOT) of=$(FDEV) bs=512 count=1 conv=nocreat,notrunc
 
 files: bootsector
@@ -50,6 +56,7 @@ files: bootsector
 	mcopy -i $(FDEV) bin/alberto "::alberto"
 	mcopy -i $(FDEV) bin/bigboy "::bigboy"
 	mcopy -i $(FDEV) bin/game "::game"
+	mcopy -i $(FDEV) bin/cigboy "::cigboy"
 
 files2: bootsector
 	cp bin/game /mnt/fdd/
@@ -57,11 +64,11 @@ files2: bootsector
 	cp dump/file.txt /mnt/fdd/
 	cp bin/alberto /mnt/fdd/
 	cp bin/bigboy /mnt/fdd/
+	cp bin/cigboy /mnt/fdd/
 	sync
 
 run: files
-	qemu-system-i386 -drive file=$(FDEV),if=floppy,media=disk,format=raw,index=0
-
+	qemu-system-i386 -cpu pentium -m 32 -drive file=$(FDEV),if=floppy,media=disk,format=raw,index=0
 
 mount: bootsector
 	mount $(FDEV) /mnt/fdd/

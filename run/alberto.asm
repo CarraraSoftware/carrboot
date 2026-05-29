@@ -15,12 +15,16 @@ main:
     ; mov BP, 0x0000
     ; sti
 
-    ; call init
-    ; call a20
+    call init
 
     mov SI, hello
     call print_str
 
+    mov AH, 0x00
+    mov AL, 0x02
+    int 0x10
+
+    call a20
     cli
     lgdt [gdtr]
     mov eax, cr0

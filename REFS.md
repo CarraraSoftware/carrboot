@@ -6,6 +6,7 @@
 - [Addressing Modes - CS Emory](https://www.cs.emory.edu/~cheung/Courses/255/Syllabus/9-Intel/cs255/addressing-modes.html)
 - [IBM Personal System/2 and Personal Computer - BIOS Manual](https://bitsavers.trailing-edge.com/pdf/ibm/pc/ps2/PS2_and_PC_BIOS_Interface_Technical_Reference_Apr87.pdf)
 - [Intel 64 and IA-32 Manual](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
+- [Intel 80386 Manual](https://pdos.csail.mit.edu/6.828/2018/readings/i386.pdf)
 - [Stanislavs - INT 0x13, AH=0x02](https://www.stanislavs.org/helppc/int_13-2.html)
 - [FAT's Root Directory Entry Structure](https://www.szyunze.com/wp-content/uploads/2024/07/Root-Directory-SFN-Entry-Data-Structure.webp)
 - [Elm Chan: FAT's MAP](https://elm-chan.org/docs/rc/fat_map.png)

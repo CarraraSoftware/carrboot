@@ -80,7 +80,6 @@ init:
     ; mov BX, 0xC000
     ; IBM PS/2:                 0xA000 
     mov BX, 0xA000
-
     mov DS, BX
     ; wtf
     ; mov BX, ORIGIN

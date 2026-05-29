@@ -34,9 +34,11 @@ FileSystem: 	            db "FAT12   "
 
 main:
     cli
-    mov AX, 0x0000
+    mov AX, 0xB000
     mov SS, AX
     mov SP, 0xFFFF
+    mov AX, DS
+    mov ES, AX
     sti 
 
     mov [DRIVE_NUMBER], DL
@@ -46,6 +48,16 @@ main:
     call print_chr
     mov AL, 'B'
     call print_chr
+
+    mov AX, 0xFF
+    call print_byte
+
+    mov AX, 0xA2
+    call print_byte
+
+    mov AX, 0x8
+    call print_byte
+
     mov AL, 0x0A
     call print_chr
     mov AL, 0x0D
@@ -59,8 +71,10 @@ main:
 .loop:
     cmp CX, [NumberRootEntries]
     jge .end
+    inc CX
 
     mov SI, BX
+    add BX, 0x20
     cmp [SI], 0
     jz .loop
 
@@ -70,10 +84,12 @@ main:
     mov AL, 0x0A
     call print_chr
 
-    inc CX
-    add BX, 0x20
     jmp .loop
 .end:
+
+    mov SI, endstr
+    call print_str
+
     jmp halt
 
 
@@ -136,8 +152,33 @@ read_sectors:
 .error: ;; tried to read after disk reset 3 times and didn't work == error
     mov AL, 51
     call print_chr
+
     jmp halt
 .end:
+    mov SI, log
+    call print_str
+
+    ; AH = status
+    ; AL = nsect
+
+
+    xor CX, CX
+    mov CL, AH
+
+    xor AH, AH
+    call print_byte
+
+    mov SI, status
+    call print_str
+
+    mov AX, CX
+    call print_byte
+
+    mov AL, 0x0D
+    call print_chr
+    mov AL, 0x0A
+    call print_chr
+
     popa
     ret
 
@@ -185,6 +226,44 @@ print_str:
     pop AX
     ret
 
+
+print_byte:
+; expects byte AX
+; do { printf('0' + v%10); v = v / 10 } while(v!=0);
+    pusha
+    xor SI, SI
+    xor CX, CX
+    xor AH, AH
+    mov CH, byte 0x0A
+.loop:
+    div CH ; AL = quot. | AH = remain.
+    mov [printbytebuf + SI], AH
+    inc SI
+    xor AH, AH
+    test AL, AL
+    jz .print
+    jmp .loop
+.print:
+    dec SI
+    xor AX, AX
+    mov AL, [printbytebuf + SI] 
+    call print_digit
+    test SI, SI
+    jnz .print
+.end:
+    popa
+    ret
+
+print_digit:
+; expects digit 0-9 at AL
+    push AX
+    xor AH, AH
+    add AL, '0'
+    call print_chr
+    pop AX
+    ret
+
+
 print_chr:
 ; expects char at AL
     pusha
@@ -203,6 +282,10 @@ halt:
 
 DRIVE_NUMBER: db 0
 buffer equ 0x1000
+printbytebuf: TIMES 3 db 0
+log: db "Sectors Read: ", 0x00
+status: db " | Status: ", 0x00
+endstr: db "EOP.", 0x0D, 0x0A, 0x00 
 nullstr: db "\0", 0
 errmsg: db "err", 0x00
 

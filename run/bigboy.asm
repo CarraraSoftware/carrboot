@@ -5,7 +5,7 @@ main:
 	mov		DS, AX
 	mov		SS, AX
 	mov		ES, AX
-	mov		esp, 90000h
+	mov		ESP, 90000h
     mov     EAX, 0x10
 halt:
     jmp halt
