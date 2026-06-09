@@ -20,9 +20,9 @@ main:
     mov SI, hello
     call print_str
 
-    mov AH, 0x00
-    mov AL, 0x13
-    int 0x10
+    ; mov AH, 0x00
+    ; mov AL, 0x13
+    ; int 0x10
 
     call a20
     cli
@@ -30,7 +30,18 @@ main:
     mov eax, cr0
     or al, 1
     mov cr0, eax
-    jmp 0x8:bigboy
+
+
+    ; init = LOAD /init
+    ; kernel = LOAD /LINUX
+    ; flags = "initrd=/init rdinit=/bin/sh\0"
+    ; params = &init, &flags
+    ; push params
+    ; jmp kernel
+    ; encontrar corretamente o entry point do kernel
+    ; jmp 0x8:kernel
+
+    jmp 0x8:bigboy ; + bigboyoffset
     ; hlt
     ; jmp halt
 
@@ -191,7 +202,10 @@ errmsg: db "err", 0x00
 buffat: dw 0xD000
 
 
-bigboy equ 0x8000
+bigboy       equ    0x8000
+bigboyoffset equ 0x11843f0
+base         equ 0x01156000
+segoffset    equ 0x157000
     ; jmp bigboy
     ; mov		AX, 0x10		; set data segments to data selector (0x10)
 	; mov		DS, AX

@@ -18,15 +18,15 @@
 # 	qemu-system-i386 -s -S -drive file=drive/fat,if=floppy,media=disk,format=raw,index=0
 
 
-# FDEV = dev/fat
-FDEV = /dev/sdc
+FDEV = dev/fat
+# FDEV = /dev/sdc
 FBOOT = boot
 
 # nasm -o $(FDEV) fat.asm 
 fat:
 	dd if=/dev/zero of=dev/fat bs=512 count=2880
 
-fs: # fat
+fs: fat
 	mkfs.fat -v -f 2 -F 12 -M 0xF0 -g 2/18 -D 0 -R 1 -s 1 $(FDEV)
 
 bigboy:
@@ -62,6 +62,7 @@ files: bootsector
 	mcopy -i $(FDEV) bin/bigboy  "::bigboy"
 	mcopy -i $(FDEV) bin/bouncer "::bouncer"
 	mcopy -i $(FDEV) bin/alberto "::alberto"
+	mcopy -i $(FDEV) bin/LINUX   "::linux"
 
 files2: bootsector
 	cp bin/game /mnt/fdd/

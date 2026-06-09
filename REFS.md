@@ -55,6 +55,7 @@
     - [Using the initial RAM disk (initrd)](https://www.kernel.org/doc/html/v4.14/admin-guide/initrd.html)
     - [OSDev - Boot Sequence](https://wiki.osdev.org/Boot_Sequence)
     - [OSDev - System Initialization (x86)](http://wiki.osdev.org/System_Initialization_(x86))
+    - [Kernel Docs about linux boot](https://elixir.bootlin.com/linux/v7.0.11/source/Documentation/arch/x86/boot.rst)
 
 
 - QEMU Stuff:

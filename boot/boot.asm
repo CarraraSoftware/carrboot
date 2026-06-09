@@ -334,7 +334,7 @@ bigboy equ 0x8000
 buffat equ 0xD000
 nullstr: db "\0", 0
 albertoname: db "ALBERTO    "
-bigboyname:  db "BOUNCER    "
+bigboyname:  db "LINUX      "
 filecluster: dw 0
 errmsg: db "err", 0x00
 
