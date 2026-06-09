@@ -21,7 +21,7 @@ main:
     call print_str
 
     mov AH, 0x00
-    mov AL, 0x02
+    mov AL, 0x13
     int 0x10
 
     call a20
@@ -186,7 +186,6 @@ hello: db "hello from alberto", 0x0D, 0x0A, 0x00
 cfnoerrormsg: db "No error in CF.", 0x0D, 0x0A, 0x00
 cferrormsg:   db "An error was detected in CF.", 0x0D, 0x0A, 0x00
 nullstr: db "\0", 0
-filename: db "BIGBOY     "
 filecluster: dw 0
 errmsg: db "err", 0x00
 buffat: dw 0xD000

@@ -22,8 +22,8 @@
 FDEV = /dev/sdc
 FBOOT = boot
 
+# nasm -o $(FDEV) fat.asm 
 fat:
-	nasm -o $(FDEV) fat.asm 
 	dd if=/dev/zero of=dev/fat bs=512 count=2880
 
 fs: # fat
@@ -32,10 +32,10 @@ fs: # fat
 bigboy:
 	nasm -g -o bin/bigboy run/bigboy.asm
 
-cigboy:
-	gcc -O0 -fno-pie -masm=intel -m32 -nostartfiles -nostdlib -ffreestanding -o bin/cigboy run/cigboy.c -Wl,--oformat=binary
 # ld -A pentium -nostdlib -O0 -o bin/cigboy --oformat=binary run/cigboy.o
 # nasm -g -o bin/cigboy run/cigboy.asm
+cigboy:
+	gcc -O0 -fno-pie -masm=intel -m32 -nostartfiles -nostdlib -ffreestanding -o bin/cigboy run/cigboy.c -Wl,--oformat=binary
 
 game:
 	nasm -g -o bin/game run/game.asm
@@ -46,17 +46,22 @@ alberto:
 boot:
 	nasm -g -o bin/$(FBOOT) boot/$(FBOOT).asm
 
-bootsector: fs alberto game boot bigboy cigboy
-	dd if=/dev/zero of=$(FDEV) bs=512 count=1
+bouncer:
+	gcc -O0 -fno-pie -masm=intel -m32 -nostdlib -std=c11 -o bin/bouncer run/bouncer.c -Wl,--script=run/linker.ld
+    
+
+bootsector: fs alberto game boot bigboy cigboy bouncer
+	dd if=/dev/zero of=$(FDEV) bs=512 count=1 conv=nocreat,notrunc
 	dd if=bin/$(FBOOT) of=$(FDEV) bs=512 count=1 conv=nocreat,notrunc
 
+#	mcopy -i $(FDEV) dump/other.txt "::other.txt"
+#   mcopy -i $(FDEV) dump/file.txt "::file.txt"
+#   mcopy -i $(FDEV) bin/game "::game"
+#   mcopy -i $(FDEV) bin/cigboy "::cigboy"
 files: bootsector
-	mcopy -i $(FDEV) dump/other.txt "::other.txt"
-	mcopy -i $(FDEV) dump/file.txt "::file.txt"
+	mcopy -i $(FDEV) bin/bigboy  "::bigboy"
+	mcopy -i $(FDEV) bin/bouncer "::bouncer"
 	mcopy -i $(FDEV) bin/alberto "::alberto"
-	mcopy -i $(FDEV) bin/bigboy "::bigboy"
-	mcopy -i $(FDEV) bin/game "::game"
-	mcopy -i $(FDEV) bin/cigboy "::cigboy"
 
 files2: bootsector
 	cp bin/game /mnt/fdd/
@@ -76,7 +81,3 @@ mount: bootsector
 finish:
 	sync
 	umount /mnt/fdd/
-
-
-
-
