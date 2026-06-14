@@ -1,8 +1,10 @@
 bits 16
 org 0x1000
 
-jmp main
-main:
+extern objstart
+section .text
+global _start
+_start:
     ; init stack
     ; cli
     ; xor AX, AX
@@ -20,17 +22,20 @@ main:
     mov SI, hello
     call print_str
 
-    ; mov AH, 0x00
-    ; mov AL, 0x13
-    ; int 0x10
+    mov AH, 0x00
+    ; mov AL, 0x13 ; Graphics mode
+    mov AL, 0x02 ; Text mode
+    int 0x10
 
     call a20
+
     cli
     lgdt [gdtr]
     mov eax, cr0
     or al, 1
     mov cr0, eax
-
+    
+    jmp 0x8:execelf
 
     ; init = LOAD /init
     ; kernel = LOAD /LINUX
@@ -41,9 +46,60 @@ main:
     ; encontrar corretamente o entry point do kernel
     ; jmp 0x8:kernel
 
-    jmp 0x8:bigboy ; + bigboyoffset
+    ; jmp 0x8:bigboy; + bigboyoffset
     ; hlt
-    ; jmp halt
+
+BITS 32
+execelf:
+    mov AX, 0x10
+    mov DS, AX
+    mov SS, AX
+    mov ES, AX
+    mov ESP, 0x90000
+
+    mov EBX, bigboy
+    xor EAX, EAX
+    mov AX, word [bigboy + 42] ; Elf32_Half e_phentsize
+    mul AX, word [bigboy + 44] ; Elf32_Half e_phnum
+    add EAX, 52                ; sizeof(Elf32_Ehdr)
+    add EBX, EAX
+    jmp EBX
+
+
+BITS 16
+header:
+    push SI
+    push AX
+    push BX
+    push CX
+    push ES
+
+    mov AX, 0xB800
+    mov ES, AX
+    mov SI, 0 
+.loop:
+    cmp SI, 52
+    jge .end
+        
+    mov CX, [bigboy + SI]
+    mov BX, SI
+    mul BX, 2
+    mov [ES:BX], CX
+    inc BX
+    mov [ES:BX], 0x0F
+    inc SI
+    jmp .loop
+
+.end:
+    pop ES
+    pop CX
+    pop BX
+    pop AX
+    pop SI
+
+    ret
+
+
 
 a20:
     push AX
@@ -125,8 +181,7 @@ checkcf:
     pop SI
     ret
 
-
-align 16
+section .data
 gdtr:
 ; dw = 2 bytes ; dd = double word = 4 bytes ; dq = quad word = 8 bytes
 gdt_size: dw gdtend - gdt - 1
@@ -202,10 +257,12 @@ errmsg: db "err", 0x00
 buffat: dw 0xD000
 
 
-bigboy       equ    0x8000
-bigboyoffset equ 0x11843f0
-base         equ 0x01156000
-segoffset    equ 0x157000
+; ELF_ENTRY: dd 0
+bigboy       equ     0x8000
+; bigboyoffset equ  0x11843f0
+; base         equ 0x01156000
+; segoffset    equ   0x157000
+; VRAM         equ    0xB8000
     ; jmp bigboy
     ; mov		AX, 0x10		; set data segments to data selector (0x10)
 	; mov		DS, AX
@@ -213,3 +270,4 @@ segoffset    equ 0x157000
 	; mov		ES, AX
 	; mov		ESP, 0x90000
     ; mov     EAX, 0x10
+

@@ -1,17 +1,9 @@
-__attribute__((section(".beginsec")))
 __attribute__((naked))
 int _start(void)
 {
-    __asm__(
-        "mov AX, 0x10\n"
-        "mov DS, AX\n"
-        "mov SS, AX\n"
-        "mov ES, AX\n"
-        "mov ESP, 0x90000\n"
-        "mov EAX, 0x10\n"
-        "call main\n"
-    );
+    __asm__("call main\n");
 }
+
 
 #define SW 320
 #define SH 200
@@ -136,6 +128,7 @@ void rect_update(Rect* r)
 
 int main(void) 
 {
+
     buffer_fill(BLACK);
     buffer_blip();
 
@@ -147,6 +140,8 @@ int main(void)
 
     int frames = 0;
     for (;;) {
+        if (frames > 10000) break;
+
         // if (frames > 1000) {
         //     frames = 0;
         //      CURCOLOR = (CURCOLOR + 1) % 0x0F;
@@ -164,6 +159,5 @@ int main(void)
         // frames++;
     }
 
-    halt();
     return 0;
 }
