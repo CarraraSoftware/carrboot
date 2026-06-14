@@ -6,7 +6,15 @@ int _start(void)
 
 #include "cigboy.h"
 volatile unsigned char* const VRAM = (unsigned char*)0xB8000;
-volatile char* const msg = "É HORA DE RODAR ISSO AQUI NO TOSHIBÃO";
+
+// @BUG: if we remove the const for this msg, it just doesn't work.
+//       it has something to do with the sections defined in the linker script,
+//       because if we use linker.full.ld which defines a bunch of sections, it never works.
+//       but with linker.ld, which just defines the origin for the .text section, 
+//       it works with the const keyword.
+//       so i guess it's due to some kind of difference between the sections
+//       .data and .rodata, but what exactly i don't know
+volatile char* const msg = "EH HORA DE RODAR ISSO AQUI NO TOSHIBAO";
 
 #define COLS 80
 #define ROWS 25
