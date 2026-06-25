@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define CARR_SV_IMPLEMENTATION
-#include "../include/sv.h"
+#include "../vendor/sv.h"
 
 static const unsigned char multiboot_magic_byte[] = {
   0x1B, 0xAD, 0xB0, 0x02,

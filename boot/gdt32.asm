@@ -35,6 +35,61 @@ db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x92, 0xCF, 0x00
 gdtend:
 
 
+; nulldesc:
+; .size1:  dw 0x0000 ; size[00:15]
+; .base1:  dw 0x0000 ; base[00:15]
+; .base2:  db 0x00   ; base[16:23]
+;         ;   [   |    |    |   |   |  |  |   ]
+;         ;   [ A | RW | DC | X | S | DPL | P ]
+; .flags1: db 0b00000000
+;         ;   [  |  |  |    |   |   |   |   ]
+;         ;   [ size[16:19] | V | L | D | G ]
+; .flags2: db 0b00000000
+; .base3:  db 0x00   ; base[24:31]
+; nulldesc_end:
+; 
+; code ,   b, 
+
+; codedesc:
+; .size1:  dw 0xFFFF ; size[00:15] 0xff, 0xff
+; .base1:  dw 0x0000 ; base[00:15] 0x00, 0x00,
+; .base2:  db 0x00   ; base[16:23] 0x00,
+;         ;   [   |  |  |   |   |    |    |   ]
+;         ;   [ P | DPL | S | X | DC | RW | A ]
+;         ;     1   00    1   1   0    1    0
+
+;         ;     1   00    1   1   0    1    0
+; .flags1: db 0b10011010
+;         ;   [   |   |   |   |  |  |  |   ]
+;         ;   [ G | D | L | V | size[16:19 ] 
+;         ;   [ 1 | 1 | 0 | 0 |  0xF       ]
+;         ;     0   0   0   0    0x0
+; .flags2: db 0b11001111
+; .base3:  db 0x00   ; base[24:31] 0x00
+; codedesc_end:
+; 
+; datadesc:
+; .size1:  dw 0xFFFF ; size[00:15]
+; .base1:  dw 0x0000 ; base[00:15]
+; .base2:  db 0x00   ; base[16:23]
+;         ;   [   |  |  |   |   |    |    |   ]
+;         ;   [ P | DPL | S | X | DC | RW | A ]
+;         ;   [ 1 | 00  | 1 | 0 | 0  |  1 | 0
+; .flags1: db 0b10010010
+;         ;   [   |   |   |   |  |  |  |   ]
+;         ;   [ G | D | L | V | size[16:19 ]
+;         ;   [ 1 | 1 | 0 | 0 |  0xF       ]
+; .flags2: db 0b11001111
+; .base3:  db 0x00   ; base[24:31]
+; datadesc_end:
+; 
+
+; [ P | DPL | S | X | DC | RW | A ]
+;   1   00    1   0   0    1    0
+; [ G | D | L | V |   size[16:19]   ]
+;   0   0   1   0        0000
+
+
 bigo: db 0x6F
 biga: db 0x41
 

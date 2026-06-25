@@ -50,6 +50,16 @@
     - [FAT's Root Directory Entry Structure](https://www.szyunze.com/wp-content/uploads/2024/07/Root-Directory-SFN-Entry-Data-Structure.webp)
 
 
+- Switching Back To Real Mode From Protected Mode:
+    - [SCS Stanford](https://www.scs.stanford.edu/05au-cs240c/lab/i386/s14_05.htm)
+    - [Stack Overflow](https://stackoverflow.com/questions/59894016/switch-from-protected-mode-to-real-mode)
+    - [Stack Exchange](https://retrocomputing.stackexchange.com/questions/32242/is-it-possible-to-switch-from-32-bit-protected-mode-to-real-mode-without-going-t)
+    - [Sudley Place](https://www.sudleyplace.com/pmtorm.html)
+    - [OSDev](https://wiki.osdev.org/Real_Mode)
+    - [Stack Overflow](https://retrocomputing.stackexchange.com/questions/32242/is-it-possible-to-switch-from-32-bit-protected-mode-to-real-mode-without-going-t)
+    - [Gemini - Saving IVT](https://share.google/aimode/VTn8htXoatm8g50qy)
+
+
 - Booting Linux:
     - [Linux Kernel Initialization](https://glennastory.net/boot/linux.html)
     - [Using the initial RAM disk (initrd)](https://www.kernel.org/doc/html/v4.14/admin-guide/initrd.html)
@@ -65,3 +75,5 @@
 
 - GRUB:
     - [Wikipedia - GNU GRUB](https://en.wikipedia.org/wiki/GNU_GRUB)
+
+

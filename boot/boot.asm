@@ -4,6 +4,12 @@ ORG  0x7C00
 jmp main
 nop
 
+%ifndef BIGBOY
+%define BIGBOY "BIGBOY     "
+%endif
+
+
+
 ;; list of ascii error codes, as printed on the tty when things go wrong
 ;; (note: print_str was removed to fit this mf in 512 bytes)
 ;; 01 = file not found
@@ -34,18 +40,13 @@ FileSystem: 	            db "FAT12   "
 
 main:
     cli
-    ; mov AX, 0x07C0
-    ; mov DS, AX
-    ; mov ES, AX
-    ; mov FS, AX
-    ; mov GS, AX
-
-    mov AX, 0x0000
+    xor AX, AX
     mov SS, AX
-    mov SP, 0xFFFF
-    mov AX, DS
+    mov DS, AX
     mov ES, AX
-    sti 
+    mov SP, rstackini
+    mov BP, SP
+    sti
 
     mov [DRIVE_NUMBER], DL
     call disk_reset
@@ -62,15 +63,11 @@ main:
     call readfat
     call readroot
 
-    ; readfile(buffer, albertoname)
-    mov BX, buffer
+    ; readfile(alberto, albertoname)
+    mov BX, alberto
     mov DI, albertoname
     call readfile
 
-    ; mov BX, 0x1000
-    ; mov BX, buffer
-    ; jmp BX     ; // doesn't work at all, wtf?
-    
     ; readfile(bigboy, bigboyname)
     mov BX, bigboy
     mov DI, bigboyname
@@ -78,12 +75,7 @@ main:
 
 
     ; run(alberto)
-    jmp buffer ; // works fine
-    ; jmp 0x1000
-
-
-    ; call execfile
-    ; jmp halt
+    jmp alberto
 
 
 readfile:
@@ -92,7 +84,7 @@ readfile:
     pusha
 
     mov AX, [NumberRootEntries]
-    mov DX, bufoot
+    mov DX, rootdir
 .search:
     test AX, AX
     jz .notfound
@@ -123,8 +115,8 @@ readfile:
     mov DI, [filecluster]
     call read_cluster
 
-    ; nextcluster = *(buffat + curcluster)
-    mov BX, buffat
+    ; nextcluster = *(fatsecs + curcluster)
+    mov BX, fatsecs
     mov AX, [filecluster]
     mul AX, 0x03
     mov CX, 0x02
@@ -284,7 +276,7 @@ readfat:
     add AX, [HiddenSectors]
     mov DI, [SectorsPerFAT]
     mul DI, [NumberFATs]
-    mov BX, buffat
+    mov BX, fatsecs
     call read_sectors
     popa
     ret
@@ -306,7 +298,7 @@ readroot:
     mul BX
     add AX, word [ReservedSectors]
     add AX, word [HiddenSectors]
-    mov BX, bufoot
+    mov BX, rootdir
     call read_sectors 
     ret
 
@@ -329,16 +321,12 @@ halt:
     jmp halt
 
 DRIVE_NUMBER: db 0
-buffer equ 0x1000
-bufoot equ 0x4000
-bigboy equ 0x8000
-buffat equ 0xD000
 
-
+%include "include/mem.asm"
 
 nullstr: db "\0", 0
 albertoname: db "ALBERTO    "
-bigboyname:  db "CIGBOY     "
+bigboyname:  db BIGBOY
 filecluster: dw 0
 errmsg: db "err", 0x00
 

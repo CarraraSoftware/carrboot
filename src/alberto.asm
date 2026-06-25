@@ -1,35 +1,36 @@
 bits 16
 org 0x1000
 
-extern objstart
+%define PMODE_SP 0x90000
+
+%macro sayhello 0
+    mov SI, hello
+    call print_str
+%endmacro
+
+%macro setmode 1
+; mov AL, 0x13 ; Graphics mode
+; mov AL, 0x02 ; Text mode
+    mov AL, %1
+    mov AH, 0x00
+    int 0x10
+%endmacro
+
+
 section .text
 global _start
 _start:
-    ; init stack
-    ; cli
-    ; xor AX, AX
-    ; mov DS, AX
-    ; mov ES, AX
-
-    ; mov AX, 0x6000
-    ; mov SS, AX
-    ; mov SP, 0x0000
-    ; mov BP, 0x0000
-    ; sti
-
     call init
 
-    mov SI, hello
-    call print_str
-
-    mov AH, 0x00
-    ; mov AL, 0x13 ; Graphics mode
-    mov AL, 0x02 ; Text mode
-    int 0x10
+    ; sayhello
+    ; setmode 0x13
 
     call a20
 
     cli
+
+    call store_ivt
+
     lgdt [gdtr]
     mov eax, cr0
     or al, 1
@@ -55,14 +56,28 @@ execelf:
     mov DS, AX
     mov SS, AX
     mov ES, AX
-    mov ESP, 0x90000
+    mov ESP, PMODE_SP
+    mov EBP, ESP
 
+; skip headers
     mov EBX, bigboy
     xor EAX, EAX
     mov AX, word [bigboy + 42] ; Elf32_Half e_phentsize
     mul AX, word [bigboy + 44] ; Elf32_Half e_phnum
     add EAX, 52                ; sizeof(Elf32_Ehdr)
     add EBX, EAX
+
+; skip possible padding
+.loop:
+    mov SI, word [EBX]
+    cmp SI, 0x0
+    jne .end
+    inc EBX
+    jmp .loop
+.end:
+    inc EBX
+
+; jump calculated offset
     jmp EBX
 
 
@@ -100,13 +115,12 @@ header:
     ret
 
 
-
 a20:
     push AX
     mov AH, 0x24
     mov AL, 0x00
     int 0x15
-    call checkcf
+    ; call checkcf
     pop AX
     ret
 
@@ -181,71 +195,17 @@ checkcf:
     pop SI
     ret
 
-section .data
-gdtr:
-; dw = 2 bytes ; dd = double word = 4 bytes ; dq = quad word = 8 bytes
-gdt_size: dw gdtend - gdt - 1
-gdt_ptr:  dd gdt
+%define IVT_CODE_
+%include "include/ivt.asm"
+%undef IVT_CODE_
+
 
 
 align 16
-gdt:
+section .data
 
-; null segment
-dd 0x00, 0x00
-; code segment
-db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x9A, 0xCF, 0x00
-; data segment
-db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x92, 0xCF, 0x00
-
-
-; nulldesc:
-; .size1:  dw 0x0000 ; size[00:15]
-; .base1:  dw 0x0000 ; base[00:15]
-; .base2:  db 0x00   ; base[16:23]
-;         ;   [   |    |    |   |   |  |  |   ]
-;         ;   [ A | RW | DC | X | S | DPL | P ]
-; .flags1: db 0b00000000
-;         ;   [  |  |  |    |   |   |   |   ]
-;         ;   [ size[16:19] | V | L | D | G ]
-; .flags2: db 0b00000000
-; .base3:  db 0x00   ; base[24:31]
-; nulldesc_end:
-; 
-; codedesc:
-; .size1:  dw 0xFFFF ; size[00:15]
-; .base1:  dw 0x0000 ; base[00:15]
-; .base2:  db 0x00   ; base[16:23]
-;         ;   [   |  |  |   |   |    |    |   ]
-;         ;   [ P | DPL | S | X | DC | RW | A ]
-;         ;     1   00    1   1   0    1    0
-; .flags1: db 0b10011010
-;         ;   [   |   |   |   |  |  |  |   ]
-;         ;   [ G | D | L | V | size[16:19 ] 
-;         ;   [ 1 | 1 | 0 | 0 |  0xF       ]
-; .flags2: db 0b11001111
-; .base3:  db 0x00   ; base[24:31]
-; codedesc_end:
-; 
-; datadesc:
-; .size1:  dw 0xFFFF ; size[00:15]
-; .base1:  dw 0x0000 ; base[00:15]
-; .base2:  db 0x00   ; base[16:23]
-;         ;   [   |  |  |   |   |    |    |   ]
-;         ;   [ P | DPL | S | X | DC | RW | A ]
-;         ;   [ 1 | 00  | 1 | 0 | 0  |  1 | 0
-; .flags1: db 0b10010010
-;         ;   [   |   |   |   |  |  |  |   ]
-;         ;   [ G | D | L | V | size[16:19 ]
-;         ;   [ 1 | 1 | 0 | 0 |  0xF       ]
-; .flags2: db 0b11001111
-; .base3:  db 0x00   ; base[24:31]
-; datadesc_end:
-
-gdtend:
-
-
-
+%include "include/gdt.asm"
+%include "include/mem.asm"
 
 DRIVE_NUMBER: db 0
 hello: db "hello from alberto", 0x0D, 0x0A, 0x00
@@ -254,20 +214,4 @@ cferrormsg:   db "An error was detected in CF.", 0x0D, 0x0A, 0x00
 nullstr: db "\0", 0
 filecluster: dw 0
 errmsg: db "err", 0x00
-buffat: dw 0xD000
-
-
-; ELF_ENTRY: dd 0
-bigboy       equ     0x8000
-; bigboyoffset equ  0x11843f0
-; base         equ 0x01156000
-; segoffset    equ   0x157000
-; VRAM         equ    0xB8000
-    ; jmp bigboy
-    ; mov		AX, 0x10		; set data segments to data selector (0x10)
-	; mov		DS, AX
-	; mov		SS, AX
-	; mov		ES, AX
-	; mov		ESP, 0x90000
-    ; mov     EAX, 0x10
 
