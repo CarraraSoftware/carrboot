@@ -3,7 +3,7 @@
 #include "vendor/nob.h"
 
 
-#define BIGBOY_IDX 5
+#define BIGBOY_IDX 2
 #define BIGBOY (FILES[(BIGBOY_IDX)])
 char BBNAME[11];
 
@@ -116,7 +116,7 @@ bool carrsys(Cmd *cmd)
     cmd_append(cmd, "nasm");
     cmd_append(cmd, "-g");
     cmd_append(cmd, "-f", "elf32");
-    cmd_append(cmd, "-o", "carrsys/carrsys.o");
+    cmd_append(cmd, "-o", "obj/carrsys.o");
     cmd_append(cmd, "carrsys/carrsys.asm");
     if (0 == strcmp(BIGBOY, "carrsys")) cmd_append(cmd, "-DCARRSYS_EXEC");
 
@@ -142,7 +142,7 @@ bool bigboy(Cmd *cmd)
         cmd_append(cmd, "ld");
         ld_flags(cmd);
         cmd_append(cmd, temp_sprintf("obj/%s.o", BIGBOY));
-        cmd_append(cmd, "carrsys/carrsys.o");
+        cmd_append(cmd, "obj/carrsys.o");
         cmd_append(cmd, "-o", temp_sprintf("bin/%s", BIGBOY));
         if (!cmd_run(cmd)) return false;
 
@@ -150,7 +150,7 @@ bool bigboy(Cmd *cmd)
 
         cmd_append(cmd, "ld");
         ld_flags(cmd);
-        cmd_append(cmd, temp_sprintf("carrsys/%s.o", BIGBOY));
+        cmd_append(cmd, temp_sprintf("obj/%s.o", BIGBOY));
         cmd_append(cmd, "-o", temp_sprintf("bin/%s", BIGBOY));
         if (!cmd_run(cmd)) return false;
 
@@ -252,7 +252,7 @@ bool bochs(Cmd* cmd)
     cmd_append(cmd, "bochs");
     cmd_append(cmd, "-f", path); // settings file
     cmd_append(cmd, "-q");       // quick start = no prompts
-    cmd_append(cmd, "-debugger");// in case of sudden need of debugging
+    // cmd_append(cmd, "-debugger");// in case of sudden need of debugging
     return cmd_run(cmd);
 }
 
@@ -263,8 +263,9 @@ bool qemu(Cmd* cmd)
 	cmd_append(cmd, "qemu-system-i386");
 	cmd_append(cmd, "-cpu", "pentium");
 	cmd_append(cmd, "-m", "32");
-    // cmd_append(cmd, "-no-reboot");
 	cmd_append(cmd, "-drive", temp_sprintf("file=%s,if=floppy,media=disk,format=raw,index=0", FLOPPY));
+    // cmd_append(cmd, "-enable-kvm");
+    // cmd_append(cmd, "-no-reboot");
     // cmd_append(cmd, "-d", "int"); // log all interrupt calls
     // cmd_append(cmd, "-s", "-S"); // debug flags
 
@@ -295,8 +296,8 @@ bool main(int argc, char* argv[])
 
     // if (!objdump(&cmd))    return !false;
 
-    // if (!qemu(&cmd))       return false;
-    if (!bochs(&cmd))      return !false;
+    if (!qemu(&cmd))       return false;
+    // if (!bochs(&cmd))      return !false;
 
     return !true;
 }

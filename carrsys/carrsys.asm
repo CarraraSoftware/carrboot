@@ -178,7 +178,6 @@ shift_protected_mode:  ; Shift[Real Mode -> Prot Mode]
 
     lgdt [gdtr]
 
-    pusha
     xor EAX, EAX
     mov CR3, EAX
 
@@ -186,7 +185,7 @@ shift_protected_mode:  ; Shift[Real Mode -> Prot Mode]
     mov EAX, CR0      ; cr0                          
     or  EAX, 1        ; |--- 32 bits ---|           
     mov CR0, EAX      ; [ # # # # ... 1 ]           
-    popa              ;               ^-  protected mode
+                      ;               ^-  protected mode
                            
     jmp 0x8:protected_mode_entry
     HALT
@@ -199,8 +198,6 @@ real_mode_entry:  ; Entry Point for when shifting from protected mode.
     mov ES, AX
     mov FS, AX
     mov GS, AX
-
-    mov AX, 0x0000
     mov SS, AX
     mov SP, rstackini
     mov BP, SP
