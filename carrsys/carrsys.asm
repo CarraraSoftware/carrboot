@@ -151,12 +151,21 @@ section .text.16.prot
 align 16 
 ; @NOTE: is this actually UNreal mode? 
 real_mode:
+    mov AX, 0x20
+    mov DS, AX
+    mov ES, AX
+    mov FS, AX
+    mov GS, AX
+    mov SS, AX
+    ; mov SP, rstackini
+
     cli
+
     mov EAX, CR0                       ; cr0
     and EAX, 0xFFFFFFFE                ; |--- 32 bits ---|
     mov CR0, EAX                       ; [ # # # # ... 0 ]
                                        ;               ^-real mode
-    jmp 0x0:real_mode_entry ; @NOTE: 0x0? why?
+    jmp far 0x0:real_mode_entry ; @NOTE: 0x0? why?
 
 ; -----------------------------------------------------------------------------;
 ; END 16 BITS - CODE - Protected Mode }                                        ;
@@ -193,6 +202,11 @@ shift_protected_mode:  ; Shift[Real Mode -> Prot Mode]
 align 16
 real_mode_entry:  ; Entry Point for when shifting from protected mode.
                   ; This routine should be called from 16 bits protected mode code.
+
+    ; call restore_ivt
+    lidt [idtr]
+    sti
+
     xor AX, AX
     mov DS, AX
     mov ES, AX
@@ -204,10 +218,6 @@ real_mode_entry:  ; Entry Point for when shifting from protected mode.
     ; @BUG: different values for the SS register causes
     ;       the int 0x10 to behave differently.
     ;       including not working at all at times, specially with bochs.
-
-    call restore_ivt
-    lidt [idtr]
-    sti
 
     call dword [real_mode_cb] ; run callback
     jmp shift_protected_mode  ; go back to protected mode

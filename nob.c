@@ -3,7 +3,7 @@
 #include "vendor/nob.h"
 
 
-#define BIGBOY_IDX 2
+#define BIGBOY_IDX 1
 #define BIGBOY (FILES[(BIGBOY_IDX)])
 char BBNAME[11];
 
@@ -179,8 +179,8 @@ bool bin(Cmd *cmd)
 }
 
 
-const char* FLOPPY = "dev/floppy.img";  // fake floppy
-// const char* FLOPPY = "/dev/sdc"; // real floppy
+// const char* FLOPPY = "dev/floppy.img";  // fake floppy
+const char* FLOPPY = "/dev/sdc"; // real floppy
 
 bool floppy(Cmd* cmd)
 {
@@ -296,7 +296,7 @@ bool main(int argc, char* argv[])
 
     // if (!objdump(&cmd))    return !false;
 
-    if (!qemu(&cmd))       return false;
+    // if (!qemu(&cmd))       return false;
     // if (!bochs(&cmd))      return !false;
 
     return !true;
