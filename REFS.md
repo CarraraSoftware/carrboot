@@ -61,11 +61,14 @@
 
 
 - Booting Linux:
+    - [Wikipedia - Bootloader](https://en.wikipedia.org/wiki/Bootloader)
     - [Linux Kernel Initialization](https://glennastory.net/boot/linux.html)
     - [Using the initial RAM disk (initrd)](https://www.kernel.org/doc/html/v4.14/admin-guide/initrd.html)
     - [OSDev - Boot Sequence](https://wiki.osdev.org/Boot_Sequence)
     - [OSDev - System Initialization (x86)](http://wiki.osdev.org/System_Initialization_(x86))
     - [Kernel Docs about linux boot](https://elixir.bootlin.com/linux/v7.0.11/source/Documentation/arch/x86/boot.rst)
+    - [Medium Article by Hasan Can Sert](https://medium.com/@hasancansert/understanding-linux-kernel-initialization-from-bootloader-to-userspace-d875431d27ec)
+    - [Linux Inside - 1: Linux Bootstrap](https://0xax.gitbooks.io/linux-insides/content/Booting/linux-bootstrap-1.html)
 
 
 - QEMU Stuff:

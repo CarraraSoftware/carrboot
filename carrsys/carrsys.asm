@@ -81,6 +81,69 @@ set_text_mode:
     ret
 
 
+global read_file
+; extern void read_file(char* name, char* buffer);
+;+- EBP -+ EBP - 00
+;|oldEBP |
+;+-------+ EBP + 04
+;|name   |
+;+-------+ EBP + 08
+;|buffer |
+;+-------+ EBP + 12
+read_file:
+    push EBP
+    mov EBP, ESP
+
+    push EBX
+    push EDI
+
+    mov EDI, [EBP + 8]  ; name
+    mov EBX, [EBP + 12] ; buffer
+
+    mov dword [real_mode_cb], readfile
+    call shift_real_mode
+
+    pop EDI
+    pop EBX
+
+    mov ESP, EBP
+    pop EBP
+    ret
+
+global read_sectors
+; extern void read_sectors(byte* buffer, word lba, word num_sectors);
+;+- EBP ------+ EBP - 00
+;|oldEBP      |
+;+------------+ EBP + 04
+;|buffer      |
+;+------------+ EBP + 08
+;|lba         |
+;+------------+ EBP + 10
+;|num_sectors |
+;+------------+ EBP + 12
+read_sectors:
+    push EBP
+    mov EBP, ESP
+
+    push EBX
+    push EDI
+
+    mov EDI, [EBP + 8]  ; buffer
+    mov EBX, [EBP + 10] ; lba
+    mov ECX, [EBP + 12] ; num_sectors
+
+    mov dword [real_mode_cb], readfile
+    call shift_real_mode
+
+    pop EDI
+    pop EBX
+
+    mov ESP, EBP
+    pop EBP
+    ret
+
+
+
 ; global set_mode
 ; ; extern int set_mode(SysMode mode);
 ; set_mode: ; @TODO: implement parametrized set_mode
@@ -107,7 +170,7 @@ shift_real_mode: ; Shift[Prot Mode -> Real Mode]
     mov dword [protected_mode_sp],  ESP ; expected to be initialized by alberto
     mov dword [protected_mode_bp],  EBP ; expected to be initialized by alberto
     mov dword [protected_mode_ret], the_return
-    jmp 0x18:real_mode
+    jmp far 0x18:real_mode
 the_return:
     ret
 
@@ -157,7 +220,6 @@ real_mode:
     mov FS, AX
     mov GS, AX
     mov SS, AX
-    ; mov SP, rstackini
 
     cli
 
@@ -215,16 +277,19 @@ real_mode_entry:  ; Entry Point for when shifting from protected mode.
     mov SS, AX
     mov SP, rstackini
     mov BP, SP
-    ; @BUG: different values for the SS register causes
-    ;       the int 0x10 to behave differently.
-    ;       including not working at all at times, specially with bochs.
 
     call dword [real_mode_cb] ; run callback
+
     jmp shift_protected_mode  ; go back to protected mode
     HALT ; unreachable
 
 
+%define FAT_CODE_
+%include "include/fat.asm"
+%undef FAT_CODE_
+
 %include "src/realio.asm"
+
 %define IVT_CODE_
 %include "include/ivt.asm"
 %undef IVT_CODE_
@@ -264,8 +329,12 @@ BITS 16
 ;------------------------------------------------------------------------------;
 section .data.16
 
-; IVT (Interrupt Vector Table)
+%define FAT_BPB_
+%include "include/fat.asm"
+%undef FAT_BPB_
 
+
+; IVT (Interrupt Vector Table)
 %define IVT_DATA_
 %include "include/ivt.asm"
 %undef IVT_DATA_

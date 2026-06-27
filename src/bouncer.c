@@ -7,6 +7,7 @@ int _start(void)
 #include "../include/bouncer.h"
 
 byte* VRAM = (byte*)0xA0000;
+byte CURCOLOR = CYAN;
 
 void halt() 
 {

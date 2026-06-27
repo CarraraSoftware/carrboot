@@ -1,7 +1,7 @@
 bits 16
 org 0x7C00
+jmp main
 
-; jmp main
 main:
     mov AL, [bigo]
     mov AH, byte 0x0E 
@@ -84,10 +84,6 @@ gdtend:
 ; datadesc_end:
 ; 
 
-; [ P | DPL | S | X | DC | RW | A ]
-;   1   00    1   0   0    1    0
-; [ G | D | L | V |   size[16:19]   ]
-;   0   0   1   0        0000
 
 
 bigo: db 0x6F

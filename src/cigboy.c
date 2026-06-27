@@ -5,60 +5,123 @@ int _start(void)
 }
 
 #include "../include/cigboy.h"
-volatile unsigned char* const VRAM = (unsigned char*)0xB8000;
+byte* VRAM = (byte*)0xB8000;
 
-// @BUG: if we remove the const for this msg, it just doesn't work.
-//       it has something to do with the sections defined in the linker script,
-//       because if we use linker.full.ld which defines a bunch of sections, it never works.
-//       but with linker.ld, which just defines the origin for the .text section, 
-//       it works with the const keyword.
-//       so i guess it's due to some kind of difference between the sections
-//       .data and .rodata, but what exactly i don't know
-const char* msg = "HOJE EU VOU DORMIR TRANQUILAÇO MEU BROTHER";
+
 
 #define COLS 80
 #define ROWS 25
+
 
 void halt() { 
     for (;;) { } 
 }
 
-int main(void)
-{    
-    int s;
-    int a;
-    int b;
-    short i;
+void clear() 
+{
     char attr;
+    int i;
 
-    set_text_mode(); // defined in assembly
-
+    attr = 0x00;
     for (i = 0; i < COLS; i++) {
-        attr = 0x00;
         VRAM[i * 2] = ' ';
         VRAM[i * 2 + 1] = attr;
     }
-    
-    attr = 0x0A;
-    VRAM[0] = '*';
-    VRAM[1] = attr;
+}
+
+void putc(char ch, char attr, int idx)
+{
+    VRAM[2*idx  ]  = ch; 
+    VRAM[2*idx+1]  = attr;
+}
+
+void print(char* str, char attr)
+{
+    int i;
+    for (i = 0; str[i] != '\0'; i++) putc(str[i], attr, i);
+}
+
+void printn(char* str, char attr, int n)
+{
+    int i;
+    for (i = 0; i < n; i++) putc(str[i], attr, i);
+}
+
+void fmtbyte(byte value, char out[3])
+{
+    int i;
+    byte ch;
 
     i = 0;
-    for (;;) {
-        if (msg[i] == '\0') break;
-        VRAM[2*COLS + 2*i]    = msg[i]; 
-        VRAM[2*COLS + 2*i+1]  = attr;
-        i++;
+    do { 
+        ch = '0' + value % 10;
+        out[i++] = ch;
+        value = value / 10;
+    } while(value != 0);
+}
+
+
+void readcluster(byte* buffer, word cluster_number)
+// NOTE: first cluster => cluster_number = 0x02
+{
+    // cluster_number - 2 => offset from RootDirectory
+    word offset = cluster_number - 2;
+    // Sectors in Root
+    word root_sectors = (NumberRootEntries * 0x20) / BytesPerSector;
+    // SectorsInFat
+    word fat_sectors = SectorsPerFAT * NumberFATs;
+    // HiddenSectors + ReservedSectors + SectorsInFat + SectorsInRoot + cluster_number - 2
+    word lba = offset + HiddenSectors + ReservedSectors + root_sectors + fat_sectors;
+    read_sectors(buffer, lba, 1);
+    return;
+}
+
+
+void print_quad(char attr)
+{
+    int i;
+    int index;
+    byte b;
+    b = (long int)fatsecs % 16;
+    for (i = 0; i < 4; i++) {
+        char str[3];
+        int j;
+
+        fmtbyte(b, str);    
+
+        for (j = 0; j < 3; j++)
+            putc(str[j], attr, index++);
+
+        b = b / 16;
     }
 
+}
 
-    i = 4 * COLS;
-    a = 26;
-    b = 64;
-    s = add(26, 64);
-    VRAM[i]   = (char)s;
-    VRAM[i+1] = attr;
 
+int main(void)
+{    
+    short i;
+    byte ch;
+    char out[3];
+    char attr; 
+    char* buf;
+    char* name;
+
+
+    set_text_mode();
+    clear();
+
+    // buf = (char*)0x1000;
+    // name = "LINUX      "; 
+    // read_file((char*)name, (char*)buf);
+    // read_file_clusters(name, buf, 31);
+
+    attr = ATTR(BLACK, GREEN);
+    print("OK", attr);
+
+    // print("OK", attr);
+
+    // printn((char*)buf, attr, 80);
     halt();
     return 0;
 }

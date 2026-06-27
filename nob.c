@@ -16,11 +16,12 @@ typedef enum {
 // @TODO: automate this? maybe transfer all files in bin/ dir?
 const char* FILES [] = {
     [0] = "alberto",
-    [1] = "bouncer",
-    [2] = "cigboy",
-    [3] = "teste",
-    [4] = "shifter",
-    [5] = "carrsys",
+    [1] = "cigboy",     // -> set_text_mode() 
+    [2] = "LINUX",
+    // [2] = "bouncer", // -> set_graphics_mode() 
+    // [3] = "teste",
+    // [4] = "shifter",
+    // [5] = "carrsys",
 };
 
 const FileType FTYPES [] = {
@@ -36,6 +37,7 @@ const FileType FTYPES [] = {
 void cc_flags(Cmd* cmd)
 {
     cmd_append(cmd, "-O0");
+    // cmd_append(cmd, "-Os");
     cmd_append(cmd, "-fno-stack-protector");
     cmd_append(cmd, "-ffreestanding");
     cmd_append(cmd, "-masm=intel");
@@ -44,7 +46,7 @@ void cc_flags(Cmd* cmd)
     cmd_append(cmd, "-nostdlib");
     cmd_append(cmd, "-nostartfiles");
     cmd_append(cmd, "-std=c11");
-    cmd_append(cmd, "-ggdb");
+    // cmd_append(cmd, "-ggdb");
 }
 
 void cc_asm_flags(Cmd* cmd) 
@@ -92,7 +94,7 @@ bool bootloader(Cmd* cmd)
     Procs ps = {0};
 
     cmd_append(cmd, "nasm");
-    cmd_append(cmd, "-g");
+    // cmd_append(cmd, "-g");
     cmd_append(cmd, "-f", "bin");
     cmd_append(cmd, "-o", "bin/boot");
     cmd_append(cmd, "boot/boot.asm");
@@ -101,7 +103,7 @@ bool bootloader(Cmd* cmd)
 
     cmd->count = 0;
     cmd_append(cmd, "nasm");
-    cmd_append(cmd, "-g");
+    // cmd_append(cmd, "-g");
     cmd_append(cmd, "-f", "bin");
     cmd_append(cmd, "-o", "bin/alberto");
     cmd_append(cmd, "src/alberto.asm");
@@ -179,8 +181,8 @@ bool bin(Cmd *cmd)
 }
 
 
-// const char* FLOPPY = "dev/floppy.img";  // fake floppy
-const char* FLOPPY = "/dev/sdc"; // real floppy
+const char* FLOPPY = "dev/floppy.img";  // fake floppy
+// const char* FLOPPY = "/dev/sdc"; // real floppy
 
 bool floppy(Cmd* cmd)
 {
@@ -288,7 +290,7 @@ bool main(int argc, char* argv[])
     GO_REBUILD_URSELF(argc, argv);    
 
     Cmd cmd = {0};
-    // if (!bigasm(&cmd))     return false;
+    // if (!bigasm(&cmd))     return !false;
 
     if (!bbname())         return !false;
     if (!bin(&cmd))        return !false;
@@ -297,7 +299,8 @@ bool main(int argc, char* argv[])
     // if (!objdump(&cmd))    return !false;
 
     // if (!qemu(&cmd))       return false;
-    // if (!bochs(&cmd))      return !false;
+    if (!bochs(&cmd))      return !false;
+
 
     return !true;
 }
