@@ -128,11 +128,11 @@ read_sectors:
     push EBX
     push EDI
 
-    mov EDI, [EBP + 8]  ; buffer
-    mov EBX, [EBP + 10] ; lba
-    mov ECX, [EBP + 12] ; num_sectors
+    mov EBX, dword [EBP + 8] ; buffer
+    mov CX,  word [EBP + 12] ; lba
+    mov DI,  word [EBP + 16] ; num_sectors
 
-    mov dword [real_mode_cb], readfile
+    mov dword [real_mode_cb], read_sectors_RM
     call shift_real_mode
 
     pop EDI

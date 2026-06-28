@@ -13,14 +13,14 @@
 ; global ivt
 ; global bios_data
 ; global alberto
-global kernlreal
+; global kernlreal
 ; global ivtsave
 ; global rstackend
 ; global rstackini
 ; global boot
-global bigboy
-global rootdir
-global fatsecs
+; global bigboy
+; global rootdir
+; global fatsecs
 
 ivt       equ 0x0000 ; | 0x03FF     | 01024 bytes
 bios_data equ 0x0400 ; | 0x04FF     | 00255 bytes

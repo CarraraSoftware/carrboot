@@ -1,7 +1,7 @@
 typedef int bool;
 #define true 1
 #define false 0
-
+#define NULL 0x0
 typedef unsigned char byte;
 typedef unsigned short int word;
 typedef unsigned int dword;
@@ -22,14 +22,14 @@ extern void read_sectors(byte* buffer, word lba, word num_sectors);
 // extern ivt;
 // extern bios_data;
 // extern alberto;
-extern byte* kernlreal;
+// extern byte* kernlreal;
 // extern byte* ivtsave;
 // extern byte* rstackend;
 // extern byte* rstackini;
 // extern byte* boot;
-extern byte* bigboy;
-extern byte* rootdir;
-extern byte* fatsecs;
+// extern byte* bigboy;
+// extern byte* rootdir;
+// extern byte* fatsecs;
 
 extern byte OEMName;
 extern word BytesPerSector;
