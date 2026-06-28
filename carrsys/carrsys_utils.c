@@ -16,6 +16,15 @@ byte* bigboy        = (byte*)0x8000;
 byte* rootdir       = (byte*)0xB400;
 byte* fatsecs       = (byte*)0xD000;
 
+void assert(bool cond, char* msg)
+{
+    if (!cond) {
+        print(msg, ATTR(RED, WHITE));
+        halt();
+    }
+}
+
+
 void halt(void)
 {
     for(;;);
@@ -179,16 +188,15 @@ void find_file_first_cluster(char* name, word* out)
 }
 
 
-#define DISK_BUFFER_SECTORS 1
+#define DISK_BUFFER_SECTORS 8
 
 byte read_file_clusters(char* name, byte* buf, int num_clusters)
 {
 
-    if (SectorsPerCluster > DISK_BUFFER_SECTORS) {
-        // @TODO: actual assert
-        print("ERROR: FILE CLUSTER IS BIGGER THAN DISK BUFFER", ATTR(RED, BLACK));
-        halt();
-    }
+    assert(
+        SectorsPerCluster <= DISK_BUFFER_SECTORS,
+        "ERROR: FILE CLUSTER IS BIGGER THAN DISK BUFFER"
+    );
 
     byte count;
     word cluster;

@@ -34,6 +34,11 @@ extern void set_graphics_mode(void);
 extern void read_file(char* name, char* buffer);
 extern void read_sectors(byte* buffer, word lba, word num_sectors);
 
+
+// stuff
+void halt(void);
+void assert(bool cond, char* msg);
+
 // text mode
 void clear();
 void putc(char ch, char attr, int idx);
