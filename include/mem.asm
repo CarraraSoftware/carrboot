@@ -29,6 +29,7 @@ kernlreal equ 0x1000 ; | 0x4E00     | 15872 bytes (31 sectors of 512 bytes)
 ivtsave   equ 0x5000 ; | 0x54FF     | 01280 bytes
 rstackend equ 0x6000 ; | -----      | -----------
 rstackini equ 0x7000 ; | -----      | -----------
+diskbuf   equ 0x7000 ; | 0x8000     | 04096 bytes
 boot      equ 0x7C00 ; | 0x7E00     | 00512 bytes
 bigboy    equ 0x8000 ; | 0xAD50     | 11600 bytes (size of bouncer, the biggest bigboy)
 rootdir   equ 0xB400 ; | 0xCFFF     | 07168 bytes (14 sectors of 512 bytes)

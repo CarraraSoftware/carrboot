@@ -6,60 +6,19 @@ int _start(void)
 
 #include "../include/bouncer.h"
 
-byte* VRAM = (byte*)0xA0000;
 byte CURCOLOR = CYAN;
+byte buffer[GRAPHICS_COLS * GRAPHICS_ROWS] = {0};
 
-void halt() 
+bool is_above_threshold(byte* buffer)
 {
-    for (;;);
-}
-
-byte get_pixel(byte* buf, int col, int row)
-{
-    if (col >= SW) error();
-    if (row >= SH) error();
-    return buf[row * SW + col];
-}
-
-
-void put_pixel(byte* buf , int col, int row, byte clr)
-{
-    if (col >= SW) error();
-    if (row >= SH) error();
-    buf[row * SW + col] = clr;
-}
-
-void buffer_blip(byte* buffer)
-{
-    for (int i = 0; i < SW * SH; i++) 
-        VRAM[i] = buffer[i];
-}
-
-void buffer_fill(byte* buffer, byte clr)
-{
-    for (int row = 0; row < SH; row++)
-        for (int col = 0; col < SW; col++)
-            put_pixel(buffer, col, row, clr);
-}
-
-bool buffer_is_above_threshold(byte* buffer)
-{
-    int total = SW * SH;
+    int total = GRAPHICS_COLS * GRAPHICS_ROWS;
     int colored = 0;
-    for (int row = 0; row < SH; row++)
-        for (int col = 0; col < SW; col++) {
+    for (int row = 0; row < GRAPHICS_ROWS; row++)
+        for (int col = 0; col < GRAPHICS_COLS; col++) {
             byte pix = get_pixel(buffer, col, row);
             if (pix == CURCOLOR) colored++;
         }
     return (colored * 100 / total)  > THRESHOLD;
-}
-
-void error()
-{
-    for (int row = 0; row < SH; row++)
-        for (int col = 0; col < SW; col++)
-            put_pixel(VRAM, col, row, RED);
-    halt();
 }
 
 void rect_draw(byte* buffer, Rect* r)
@@ -71,13 +30,13 @@ void rect_draw(byte* buffer, Rect* r)
 
 void rect_update(Rect* r)
 {
-    if (r->x + r->vx > SW - r->w ||r->x + r->vx < 0) {
+    if (r->x + r->vx > GRAPHICS_COLS - r->w ||r->x + r->vx < 0) {
         r->vx *= -1;
     } else {
         r->x += r->vx;
     }
 
-    if (r->y + r->vy > SH - r->h ||r->y + r->vy < 0) {
+    if (r->y + r->vy > GRAPHICS_ROWS - r->h ||r->y + r->vy < 0) {
         r->vy *= -1;
     } else {
         r->y += r->vy;
@@ -86,13 +45,7 @@ void rect_update(Rect* r)
 
 int main(void) 
 {
-    char* a = (char*)0xB8000;
-    a[0] = '$';
-    a[1] = 0x0A;
-
     set_graphics_mode();
-
-    byte buffer[SW * SH] = {0};
 
     buffer_fill(buffer, BLACK);
     buffer_blip(buffer);
@@ -104,7 +57,7 @@ int main(void)
     };
 
     for (;;) {
-        if (buffer_is_above_threshold(buffer)) {
+        if (is_above_threshold(buffer)) {
             CURCOLOR = (CURCOLOR + 1) % 0x0F;
         };
 

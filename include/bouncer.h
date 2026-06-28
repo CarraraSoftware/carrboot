@@ -1,8 +1,6 @@
 // #define CARRSYS_IMPLEMENTATION
 #include "carrsys.h"
 
-#define SW 320
-#define SH 200
 #define THRESHOLD 50
 
 

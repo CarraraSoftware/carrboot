@@ -118,10 +118,16 @@ bool carrsys(Cmd *cmd)
     cmd_append(cmd, "nasm");
     cmd_append(cmd, "-g");
     cmd_append(cmd, "-f", "elf32");
-    cmd_append(cmd, "-o", "obj/carrsys.o");
-    cmd_append(cmd, "carrsys/carrsys.asm");
+    cmd_append(cmd, "-o", "obj/carrsys_core.o");
+    cmd_append(cmd, "carrsys/carrsys_core.asm");
     if (0 == strcmp(BIGBOY, "carrsys")) cmd_append(cmd, "-DCARRSYS_EXEC");
+    if (!cmd_run(cmd)) return false;
 
+    cmd_append(cmd, "gcc");
+    cc_flags(cmd);
+    cmd_append(cmd, "-c");
+    cmd_append(cmd, "-o", "obj/carrsys_utils.o");
+    cmd_append(cmd, "carrsys/carrsys_utils.c");
     return cmd_run(cmd);
 }
 
@@ -144,18 +150,19 @@ bool bigboy(Cmd *cmd)
         cmd_append(cmd, "ld");
         ld_flags(cmd);
         cmd_append(cmd, temp_sprintf("obj/%s.o", BIGBOY));
-        cmd_append(cmd, "obj/carrsys.o");
+        cmd_append(cmd, "obj/carrsys_core.o");
+        cmd_append(cmd, "obj/carrsys_utils.o");
         cmd_append(cmd, "-o", temp_sprintf("bin/%s", BIGBOY));
         if (!cmd_run(cmd)) return false;
 
     } else {
-
+        // run carrsys as standalone executable
         cmd_append(cmd, "ld");
         ld_flags(cmd);
-        cmd_append(cmd, temp_sprintf("obj/%s.o", BIGBOY));
+        cmd_append(cmd, "obj/carrsys_core.o");
+        cmd_append(cmd, "obj/carrsys_utils.o");
         cmd_append(cmd, "-o", temp_sprintf("bin/%s", BIGBOY));
         if (!cmd_run(cmd)) return false;
-
     }
 
     return true;
@@ -298,8 +305,8 @@ bool main(int argc, char* argv[])
 
     // if (!objdump(&cmd))    return !false;
 
-    // if (!qemu(&cmd))       return false;
-    if (!bochs(&cmd))      return !false;
+    if (!qemu(&cmd))       return false;
+    // if (!bochs(&cmd))      return !false;
 
 
     return !true;
